@@ -56,9 +56,6 @@ if token_file and schedule_file:
         else:
             output[out_col] = ""
 
-    # Add DonorPaidCosts column
-output["DonorPaidCosts"] = False
-
     # Detect fund splits
     fund_pattern = re.compile(r"Fund(\d+)_Code")
 
