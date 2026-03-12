@@ -53,6 +53,10 @@ if token_file and schedule_file:
     for out_col, source_col in mapping.items():
         if source_col in merged.columns:
             output[out_col] = merged[source_col]
+            if out_col == "NextPaymentDate":
+    output[out_col] = pd.to_datetime(merged[source_col], errors="coerce").dt.strftime("%m/%d/%Y")
+     else:
+                output[out_col] = merged[source_col]
         else:
             output[out_col] = ""
 
