@@ -1,8 +1,9 @@
+
 import pandas as pd
 import streamlit as st
 import re
 
-st.title("LRD Schedule Migration File Builder")
+st.title("Recurring Schedule Migration Builder")
 
 token_file = st.file_uploader("Upload Token File")
 schedule_file = st.file_uploader("Upload Schedule File")
@@ -49,13 +50,9 @@ if token_file and schedule_file:
         "PlatformReferenceId": "RD_Schedule_Id"
     }
 
-        for out_col, source_col in mapping.items():
+    for out_col, source_col in mapping.items():
         if source_col in merged.columns:
-            # Special handling for NextPaymentDate: remove time
-            if out_col == "NextPaymentDate":
-                output[out_col] = pd.to_datetime(merged[source_col], errors="coerce").dt.strftime("%m/%d/%Y")
-            else:
-                output[out_col] = merged[source_col]
+            output[out_col] = merged[source_col]
         else:
             output[out_col] = ""
 
