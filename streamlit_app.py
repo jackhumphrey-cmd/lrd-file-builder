@@ -83,16 +83,6 @@ if token_file and schedule_file:
         output[f"Project{i}Name"] = merged[name_col] if name_col in merged else ""
         output[f"Project{i}Amount"] = merged[amount_col] if amount_col in merged else ""
 
-    # Step 7: Remove CREDITCARDCOSTS projects and update DonorPaidCosts
-for i in range(1, max_funds + 1):
-    code_col = f"Project{i}Code"
-    name_col = f"Project{i}Name"
-    amount_col = f"Project{i}Amount"
-
-    if code_col in output.columns:
-        mask = output[code_col] == "CREDITCARDCOSTS"
-        output.loc[mask, [code_col, name_col, amount_col]] = ""
-        output.loc[mask, "DonorPaidCosts"] = True
 
     # Display preview
     st.write("Output Preview", output.head())
