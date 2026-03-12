@@ -56,9 +56,6 @@ if token_file and schedule_file:
         else:
             output[out_col] = ""
 
-    if out_col == "NextPaymentDate":
-    output[out_col] = pd.to_datetime(merged[source_col], errors="coerce").dt.strftime("%m/%d/%Y")
-
     # Detect fund splits
     fund_pattern = re.compile(r"Fund(\d+)_Code")
 
