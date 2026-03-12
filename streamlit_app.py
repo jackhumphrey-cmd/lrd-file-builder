@@ -48,7 +48,7 @@ if token_file and schedule_file:
         "Amount": "Schedule_Amount",
         "Currency": "Schedule_Currency",
         "Frequency": "Schedule_Frequency",
-        "NextPaymentDate": "NextPaymentDate",
+        "NextPaymentDate": "Schedule_NextChargeDate",
         "LegacyId": "RD_Schedule_Id",
         "CustomerId": "created_customer",
         "SegmentCode": "Schedule_Meta_MotivationCode",
