@@ -2,7 +2,7 @@ import pandas as pd
 import streamlit as st
 import re
 
-st.title("Recurring Schedule Migration Builder")
+st.title("LRD Schedule Migration File Builder")
 
 token_file = st.file_uploader("Upload Token File")
 schedule_file = st.file_uploader("Upload Schedule File")
