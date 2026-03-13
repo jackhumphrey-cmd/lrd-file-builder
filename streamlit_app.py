@@ -8,7 +8,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("💳 LRD Migration Schedule Builder")
+st.title("LRD Migration Schedule Builder")
 st.markdown("Generate recurring schedule migration files from legacy exports.")
 
 # Sidebar uploads
