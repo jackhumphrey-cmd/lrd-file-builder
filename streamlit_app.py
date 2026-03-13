@@ -4,8 +4,8 @@ import re
 
 st.set_page_config(page_title="Recurring Schedule Migration Builder", layout="wide")
 
-st.title("Recurring Schedule Migration Builder")
-st.markdown("Upload your **Token File** and **Schedule File** to generate the migration import.")
+st.title("LRD Migration Schedule Builder")
+st.markdown("Upload your **Token File** and **Schedule File** to generate the final import file.")
 
 # Layout columns for uploads
 col1, col2 = st.columns(2)
