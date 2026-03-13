@@ -128,17 +128,14 @@ if token_file and schedule_file:
         # -----------------------------
         # Clean numeric formatting
         # -----------------------------
-        def clean_number(x):
-            if pd.isna(x):
-                return ""
-            if float(x) == int(float(x)):
-                return str(int(float(x)))
-            return str(round(float(x), 2))
-
-        output["Amount"] = output["Amount"].apply(clean_number)
-        for col in output.columns:
-            if "Project" in col and "Amount" in col:
-                output[col] = output[col].apply(clean_number)
+def clean_number(x):
+    try:
+        num = float(x)
+        if num == int(num):
+            return str(int(num))
+        return str(round(num, 2))
+    except (ValueError, TypeError):
+        return ""  # Return blank if conversion fails
 
     # -----------------------------
     # Migration Summary Dashboard
