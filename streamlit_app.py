@@ -8,10 +8,10 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("LRD Migration Schedule Builder")
+st.title("💳 LRD Migration Schedule Builder")
 st.markdown("Generate recurring schedule migration files from legacy exports.")
 
-# Sidebar Uploads
+# Sidebar uploads
 st.sidebar.header("Upload Files")
 token_file = st.sidebar.file_uploader("Token File", type=["csv"])
 schedule_file = st.sidebar.file_uploader("Schedule File", type=["csv", "xlsx"])
@@ -40,6 +40,10 @@ if token_file and schedule_file:
             right_on="source_old_id",
             how="left"
         ).drop(columns=["source_old_id"])
+
+        # Remove cancelled schedules
+        if "Schedule_Status" in merged.columns:
+            merged = merged[merged["Schedule_Status"].str.upper() != "CANCELLED"]
 
         # Convert TenderType
         merged["TenderType"] = merged["TenderType"].replace({"CC": "Credit"})
@@ -103,19 +107,15 @@ if token_file and schedule_file:
             if code_col in output.columns:
                 mask = output[code_col] == "CREDITCARDCOSTS"
 
-                # Subtract the amount from Schedule Amount
                 cc_costs = pd.to_numeric(output.loc[mask, amount_col], errors="coerce").fillna(0)
                 output.loc[mask, "Amount"] = (
                     pd.to_numeric(output.loc[mask, "Amount"], errors="coerce") - cc_costs
                 ).round(2)
 
-                # Remove the project split
                 output.loc[mask, [code_col, name_col, amount_col]] = ""
-
-                # Set DonorPaidCosts flag
                 output.loc[mask, "DonorPaidCosts"] = True
 
-        # Calculate total of remaining project splits
+        # Calculate project totals
         project_amount_cols = [col for col in output.columns if "Project" in col and "Amount" in col]
         if project_amount_cols:
             output["ProjectTotal"] = output[project_amount_cols].apply(pd.to_numeric, errors="coerce").sum(axis=1)
@@ -128,7 +128,6 @@ if token_file and schedule_file:
     # Migration Summary Dashboard
     st.subheader("Migration Summary")
     col1, col2, col3 = st.columns(3)
-
     col1.metric("Schedules Processed", len(output))
     missing_tokens = output["PaymentMethodId"].isna().sum()
     col2.metric("Missing Tokens", missing_tokens)
@@ -144,9 +143,18 @@ if token_file and schedule_file:
     if missing_tokens == 0 and mismatched_splits == 0:
         st.success("No major data issues detected")
 
-    # Output preview
+    # Highlight problem rows in preview
     st.subheader("Output Preview")
-    st.dataframe(output, use_container_width=True)
+
+    def highlight_problems(row):
+        color = ''
+        if row["PaymentMethodId"] is pd.NA or pd.isna(row["PaymentMethodId"]):
+            color = 'background-color: #FFCC99'  # orange for missing token
+        if row["AmountMismatch"]:
+            color = 'background-color: #FF9999'  # red for split mismatch
+        return [color]*len(row)
+
+    st.dataframe(output.style.apply(highlight_problems, axis=1), use_container_width=True)
 
     # Download full migration file
     csv = output.to_csv(index=False).encode("utf-8")
