@@ -109,10 +109,21 @@ if token_file and schedule_file:
 
             if code_col in output.columns:
 
-                mask = output[code_col] == "CREDITCARDCOSTS"
+        mask = output[code_col] == "CREDITCARDCOSTS"
 
-                output.loc[mask, [code_col, name_col, amount_col]] = ""
-                output.loc[mask, "DonorPaidCosts"] = True
+# Capture the credit card cost amount
+cc_costs = pd.to_numeric(output.loc[mask, amount_col], errors="coerce").fillna(0)
+
+# Subtract from schedule amount
+output.loc[mask, "Amount"] = (
+    pd.to_numeric(output.loc[mask, "Amount"], errors="coerce") - cc_costs
+)
+
+# Remove the project split
+output.loc[mask, [code_col, name_col, amount_col]] = ""
+
+# Set donor paid costs flag
+output.loc[mask, "DonorPaidCosts"] = True
 
         # Calculate project totals
         project_amount_cols = [
