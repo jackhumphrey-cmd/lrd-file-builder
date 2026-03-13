@@ -115,7 +115,7 @@ if token_file and schedule_file:
                 output.loc[mask, [code_col, name_col, amount_col]] = ""
                 output.loc[mask, "DonorPaidCosts"] = True
 
-        # Calculate project totals
+        # Calculate total of remaining project splits
         project_amount_cols = [col for col in output.columns if "Project" in col and "Amount" in col]
         if project_amount_cols:
             output["ProjectTotal"] = output[project_amount_cols].apply(pd.to_numeric, errors="coerce").sum(axis=1)
@@ -125,7 +125,24 @@ if token_file and schedule_file:
         # Identify mismatched splits
         output["AmountMismatch"] = pd.to_numeric(output["Amount"], errors="coerce") != output["ProjectTotal"]
 
+        # -----------------------------
+        # Clean numeric formatting
+        # -----------------------------
+        def clean_number(x):
+            if pd.isna(x):
+                return ""
+            if float(x) == int(float(x)):
+                return str(int(float(x)))
+            return str(round(float(x), 2))
+
+        output["Amount"] = output["Amount"].apply(clean_number)
+        for col in output.columns:
+            if "Project" in col and "Amount" in col:
+                output[col] = output[col].apply(clean_number)
+
+    # -----------------------------
     # Migration Summary Dashboard
+    # -----------------------------
     st.subheader("Migration Summary")
     col1, col2, col3 = st.columns(3)
     col1.metric("Schedules Processed", len(output))
@@ -143,9 +160,10 @@ if token_file and schedule_file:
     if missing_tokens == 0 and mismatched_splits == 0:
         st.success("No major data issues detected")
 
+    # -----------------------------
     # Highlight problem rows in preview
+    # -----------------------------
     st.subheader("Output Preview")
-
     def highlight_problems(row):
         color = ''
         if row["PaymentMethodId"] is pd.NA or pd.isna(row["PaymentMethodId"]):
