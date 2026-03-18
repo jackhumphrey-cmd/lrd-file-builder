@@ -27,7 +27,7 @@ st.markdown("---")
 col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown("### Stripe / Authorize.net")
+    st.markdown("### Stripe / Authorize.net Migrations")
     st.caption("Direct token-based migrations with simple mapping.")
     st.link_button(
         "Launch App →",
@@ -36,7 +36,7 @@ with col1:
     )
 
 with col2:
-    st.markdown("### Stax Migration")
+    st.markdown("### Stax Migrations")
     st.caption("Token + mapping-based migration with intelligent matching.")
     st.link_button(
         "Launch App →",
