@@ -38,6 +38,22 @@ if token_file and schedule_file:
             schedule = pd.read_excel(schedule_file)
 
         # -----------------------------
+        # FIX: Ensure no duplicate token columns
+        # -----------------------------
+        if "source_old_id" not in tokens.columns:
+            if "old_id" in tokens.columns:
+                tokens = tokens.rename(columns={"old_id": "source_old_id"})
+        else:
+            if "old_id" in tokens.columns:
+                tokens = tokens.drop(columns=["old_id"])
+
+        # Safety check
+        if tokens.columns.duplicated().any():
+            st.error("Duplicate columns detected in token file")
+            st.write(tokens.columns)
+            st.stop()
+
+        # -----------------------------
         # Optional Mapping File Logic
         # -----------------------------
         mapping_df = None
@@ -49,8 +65,6 @@ if token_file and schedule_file:
 
         if mapping_df is not None:
             st.sidebar.success("Mapping file applied")
-
-            tokens = tokens.rename(columns={"old_id": "source_old_id"})
 
             mapping_df = mapping_df.rename(columns={
                 "reference_token": "source_old_id",
