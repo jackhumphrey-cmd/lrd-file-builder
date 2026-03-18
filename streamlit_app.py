@@ -32,11 +32,10 @@ if token_file and schedule_file and mapping_file:
         # Load Token File
         # -----------------------------
         tokens = pd.read_csv(token_file)
-        tokens["source_old_id"] = tokens.get("old_id", tokens.get("source_old_id"))
+        tokens["source_old_id"] = tokens.get("old_id", tokens.get("source_old_id")).astype(str)
         tokens = tokens.drop(columns=[c for c in ["old_id"] if c in tokens.columns])
-        tokens["source_old_id"] = tokens["source_old_id"].astype(str)
 
-        # Aggregate tokens to ensure uniqueness
+        # Ensure unique token mapping
         tokens_unique = tokens.groupby("source_old_id", as_index=False).agg({
             "created_customer": "first",
             "source_new_id": "first"
@@ -59,47 +58,61 @@ if token_file and schedule_file and mapping_file:
         mapping_df["source_old_id"] = mapping_df["source_old_id"].astype(str)
         mapping_df["Gateway_PaymentTokenId"] = mapping_df["Gateway_PaymentTokenId"].astype(str)
 
-        # Warn about duplicates in mapping
-        dupes = mapping_df["Gateway_PaymentTokenId"][mapping_df["Gateway_PaymentTokenId"].duplicated()]
-        if not dupes.empty:
-            st.warning(f"Duplicate Gateway_PaymentTokenId values found in mapping file. Only first occurrence will be used: {dupes.tolist()}")
-            mapping_df = mapping_df.drop_duplicates(subset=["Gateway_PaymentTokenId"])
+        # -----------------------------
+        # Build lookup for first-successful mapping
+        # -----------------------------
+        gateway_to_token_rows = {}
+        for idx, row in mapping_df.iterrows():
+            gateway = row["Gateway_PaymentTokenId"]
+            if gateway not in gateway_to_token_rows:
+                gateway_to_token_rows[gateway] = []
+            gateway_to_token_rows[gateway].append(row)
 
         # -----------------------------
-        # Merge tokens into mapping based on source_old_id
+        # Map tokens for each schedule row
         # -----------------------------
-        mapping_df = mapping_df.merge(
-            tokens_unique,
-            on="source_old_id",
-            how="left"
-        )
+        created_customers = []
+        source_new_ids = []
 
-        # -----------------------------
-        # Merge mapping info into schedule based on Gateway_PaymentTokenId
-        # -----------------------------
-        merged = schedule.merge(
-            mapping_df[["Gateway_PaymentTokenId", "created_customer", "source_new_id"]],
-            on="Gateway_PaymentTokenId",
-            how="left"
-        )
+        for _, sched_row in schedule.iterrows():
+            gateway = sched_row["Gateway_PaymentTokenId"]
+            mapped = False
+            if gateway in gateway_to_token_rows:
+                for map_row in gateway_to_token_rows[gateway]:
+                    old_id = map_row["source_old_id"]
+                    token_match = tokens_unique[tokens_unique["source_old_id"] == old_id]
+                    if not token_match.empty:
+                        created_customers.append(token_match["created_customer"].values[0])
+                        source_new_ids.append(token_match["source_new_id"].values[0])
+                        mapped = True
+                        break
+            if not mapped:
+                created_customers.append(None)
+                source_new_ids.append(None)
+
+        schedule["created_customer"] = created_customers
+        schedule["source_new_id"] = source_new_ids
+
+        # Drop rows with no successful mapping
+        schedule = schedule[schedule["created_customer"].notna()]
 
         # -----------------------------
         # Remove cancelled schedules
         # -----------------------------
-        if "Schedule_Status" in merged.columns:
-            merged = merged[merged["Schedule_Status"].str.upper() != "CANCELLED"]
+        if "Schedule_Status" in schedule.columns:
+            schedule = schedule[schedule["Schedule_Status"].str.upper() != "CANCELLED"]
 
         # -----------------------------
         # Convert TenderType values
         # -----------------------------
-        merged["TenderType"] = merged["TenderType"].replace({"CC": "Credit"})
+        schedule["TenderType"] = schedule["TenderType"].replace({"CC": "Credit"})
 
         # -----------------------------
         # Format NextPaymentDate
         # -----------------------------
-        if "Schedule_NextChargeDate" in merged.columns:
-            merged["Schedule_NextChargeDate"] = pd.to_datetime(
-                merged["Schedule_NextChargeDate"], errors="coerce"
+        if "Schedule_NextChargeDate" in schedule.columns:
+            schedule["Schedule_NextChargeDate"] = pd.to_datetime(
+                schedule["Schedule_NextChargeDate"], errors="coerce"
             ).dt.strftime("%m/%d/%Y")
 
         # -----------------------------
@@ -123,9 +136,8 @@ if token_file and schedule_file and mapping_file:
         }
 
         for out_col, source_col in mapping.items():
-            output[out_col] = merged[source_col] if source_col in merged else ""
+            output[out_col] = schedule[source_col] if source_col in schedule else ""
 
-        # Default DonorPaidCosts
         output["DonorPaidCosts"] = False
 
         # -----------------------------
@@ -134,7 +146,7 @@ if token_file and schedule_file and mapping_file:
         fund_pattern = re.compile(r"Fund(\d+)_Code")
         fund_numbers = sorted([
             int(fund_pattern.match(col).group(1))
-            for col in merged.columns
+            for col in schedule.columns
             if fund_pattern.match(col)
         ])
         max_funds = max(fund_numbers) if fund_numbers else 0
@@ -144,12 +156,12 @@ if token_file and schedule_file and mapping_file:
             name_col = f"Fund{i}_Name"
             amount_col = f"Fund{i}_Amount"
 
-            output[f"Project{i}Code"] = merged[code_col] if code_col in merged else ""
-            output[f"Project{i}Name"] = merged[name_col] if name_col in merged else ""
-            output[f"Project{i}Amount"] = merged[amount_col] if amount_col in merged else ""
+            output[f"Project{i}Code"] = schedule[code_col] if code_col in schedule else ""
+            output[f"Project{i}Name"] = schedule[name_col] if name_col in schedule else ""
+            output[f"Project{i}Amount"] = schedule[amount_col] if amount_col in schedule else ""
 
         # -----------------------------
-        # Remove CREDITCARDCOSTS and subtract from Schedule Amount
+        # Remove CREDITCARDCOSTS and adjust Amount
         # -----------------------------
         for i in range(1, max_funds + 1):
             code_col = f"Project{i}Code"
