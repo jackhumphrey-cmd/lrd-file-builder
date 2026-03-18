@@ -49,13 +49,16 @@ if token_file and schedule_file and mapping_file:
         # -----------------------------
         mapping_df = pd.read_csv(mapping_file)
 
-        expected_cols = ["old_id", "stax_payment_method_id"]
+        # Updated to match your mapping file
+        expected_cols = ["reference_token", "stax_payment_method_id"]
         for col in expected_cols:
             if col not in mapping_df.columns:
                 st.error(f"Mapping file is missing required column: '{col}'")
                 st.stop()
 
+        # Rename to match existing code logic
         mapping_df = mapping_df.rename(columns={
+            "reference_token": "old_id",
             "stax_payment_method_id": "Gateway_PaymentTokenId"
         })
         mapping_df["old_id"] = mapping_df["old_id"].astype(str).str.strip()
