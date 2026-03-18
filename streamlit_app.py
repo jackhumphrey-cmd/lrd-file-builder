@@ -8,7 +8,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("LRD Migration Schedule Builder")
+st.title("💳 LRD Migration Schedule Builder")
 st.markdown("Generate recurring schedule migration files from legacy exports.")
 
 # -----------------------------
@@ -56,21 +56,27 @@ if token_file and schedule_file:
         # -----------------------------
         # Optional Mapping File Logic
         # -----------------------------
-        mapping_df = None
         if mapping_file:
             if mapping_file.name.endswith(".csv"):
                 mapping_df = pd.read_csv(mapping_file)
             else:
                 mapping_df = pd.read_excel(mapping_file)
 
-        if mapping_df is not None:
             st.sidebar.success("Mapping file applied")
 
+            # Ensure correct names
             mapping_df = mapping_df.rename(columns={
                 "reference_token": "source_old_id",
                 "stax_payment_method_id": "mapped_payment_id"
             })
 
+            # Convert to strings to avoid merge type issues
+            schedule["Gateway_PaymentTokenId"] = schedule["Gateway_PaymentTokenId"].astype(str)
+            mapping_df["mapped_payment_id"] = mapping_df["mapped_payment_id"].astype(str)
+            mapping_df["source_old_id"] = mapping_df["source_old_id"].astype(str)
+            tokens["source_old_id"] = tokens["source_old_id"].astype(str)
+
+            # Merge mapping into schedule to replace Gateway_PaymentTokenId
             schedule = schedule.merge(
                 mapping_df[["source_old_id", "mapped_payment_id"]],
                 left_on="Gateway_PaymentTokenId",
