@@ -8,7 +8,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("💳 LRD Migration Schedule Builder")
+st.title("LRD Migration Schedule Builder")
 st.markdown("Generate recurring schedule migration files from legacy exports.")
 
 # -----------------------------
@@ -31,27 +31,13 @@ if token_file and schedule_file:
 
         # Load files
         tokens = pd.read_csv(token_file)
+        tokens["source_old_id"] = tokens.get("old_id", tokens.get("source_old_id"))
+        tokens = tokens.drop(columns=[c for c in ["old_id"] if c in tokens.columns])
 
         if schedule_file.name.endswith(".csv"):
             schedule = pd.read_csv(schedule_file)
         else:
             schedule = pd.read_excel(schedule_file)
-
-        # -----------------------------
-        # FIX: Ensure no duplicate token columns
-        # -----------------------------
-        if "source_old_id" not in tokens.columns:
-            if "old_id" in tokens.columns:
-                tokens = tokens.rename(columns={"old_id": "source_old_id"})
-        else:
-            if "old_id" in tokens.columns:
-                tokens = tokens.drop(columns=["old_id"])
-
-        # Safety check
-        if tokens.columns.duplicated().any():
-            st.error("Duplicate columns detected in token file")
-            st.write(tokens.columns)
-            st.stop()
 
         # -----------------------------
         # Optional Mapping File Logic
@@ -62,59 +48,44 @@ if token_file and schedule_file:
             else:
                 mapping_df = pd.read_excel(mapping_file)
 
-            st.sidebar.success("Mapping file applied")
-
-            # Ensure correct names
+            # Standardize column names
             mapping_df = mapping_df.rename(columns={
                 "reference_token": "source_old_id",
-                "stax_payment_method_id": "mapped_payment_id"
+                "stax_payment_method_id": "Gateway_PaymentTokenId"
             })
 
-            # Convert to strings to avoid merge type issues
-            schedule["Gateway_PaymentTokenId"] = schedule["Gateway_PaymentTokenId"].astype(str)
-            mapping_df["mapped_payment_id"] = mapping_df["mapped_payment_id"].astype(str)
-            mapping_df["source_old_id"] = mapping_df["source_old_id"].astype(str)
+            # Convert IDs to strings to ensure merge works
             tokens["source_old_id"] = tokens["source_old_id"].astype(str)
+            mapping_df["source_old_id"] = mapping_df["source_old_id"].astype(str)
+            mapping_df["Gateway_PaymentTokenId"] = mapping_df["Gateway_PaymentTokenId"].astype(str)
 
-            # Merge mapping into schedule to replace Gateway_PaymentTokenId
-            schedule = schedule.merge(
-                mapping_df[["source_old_id", "mapped_payment_id"]],
-                left_on="Gateway_PaymentTokenId",
-                right_on="source_old_id",
+            # Step 1: populate token metadata into mapping file
+            mapping_df = mapping_df.merge(
+                tokens[["source_old_id", "created_customer", "source_new_id"]],
+                on="source_old_id",
                 how="left"
             )
 
-            schedule["Gateway_PaymentTokenId"] = schedule["mapped_payment_id"].combine_first(
-                schedule["Gateway_PaymentTokenId"]
+            # Step 2: merge mapping file into schedule
+            schedule["Gateway_PaymentTokenId"] = schedule["Gateway_PaymentTokenId"].astype(str)
+            schedule = schedule.merge(
+                mapping_df[["Gateway_PaymentTokenId", "created_customer", "source_new_id"]],
+                on="Gateway_PaymentTokenId",
+                how="left"
             )
 
-            schedule = schedule.drop(columns=["source_old_id", "mapped_payment_id"], errors="ignore")
-
         else:
-            st.sidebar.info("No mapping file (standard processing)")
+            # No mapping file: merge schedule directly with tokens
+            schedule["Gateway_PaymentTokenId"] = schedule["Gateway_PaymentTokenId"].astype(str)
+            tokens["source_old_id"] = tokens["source_old_id"].astype(str)
+            schedule = schedule.merge(
+                tokens[["source_old_id", "created_customer", "source_new_id"]],
+                left_on="Gateway_PaymentTokenId",
+                right_on="source_old_id",
+                how="left"
+            ).drop(columns=["source_old_id"], errors="ignore")
 
-        # -----------------------------
-        # Merge token data
-        # -----------------------------
-        merged = schedule.merge(
-            tokens[["source_old_id", "created_customer", "source_new_id"]],
-            left_on="Gateway_PaymentTokenId",
-            right_on="source_old_id",
-            how="left"
-        ).drop(columns=["source_old_id"])
-
-        # -----------------------------
-        # Mapping Preview Table
-        # -----------------------------
-        st.subheader("Token Mapping Preview")
-        preview_cols = ["RD_Schedule_Id", "Gateway_PaymentTokenId", "created_customer", "source_new_id"]
-        existing_cols = [col for col in preview_cols if col in merged.columns]
-
-        if existing_cols:
-            st.dataframe(merged[existing_cols].head(20), use_container_width=True)
-            st.info("Check that 'created_customer' and 'source_new_id' are correctly populated based on the token mapping.")
-        else:
-            st.warning("Mapping preview columns not found in merged data.")
+        merged = schedule.copy()
 
         # -----------------------------
         # Remove Cancelled
@@ -170,7 +141,6 @@ if token_file and schedule_file:
             for col in merged.columns
             if fund_pattern.match(col)
         ])
-
         max_funds = max(fund_numbers) if fund_numbers else 0
 
         for i in range(1, max_funds + 1):
@@ -188,13 +158,10 @@ if token_file and schedule_file:
 
             if code_col in output.columns:
                 mask = output[code_col] == "CREDITCARDCOSTS"
-
                 cc_costs = pd.to_numeric(output.loc[mask, amount_col], errors="coerce").fillna(0)
-
                 output.loc[mask, "Amount"] = (
                     pd.to_numeric(output.loc[mask, "Amount"], errors="coerce") - cc_costs
                 )
-
                 output.loc[mask, [code_col, name_col, amount_col]] = ""
                 output.loc[mask, "DonorPaidCosts"] = True
 
@@ -236,7 +203,6 @@ if token_file and schedule_file:
     # Dashboard
     # -----------------------------
     st.subheader("Migration Summary")
-
     col1, col2, col3 = st.columns(3)
     col1.metric("Schedules Processed", len(output))
     col2.metric("Missing Tokens", output["PaymentMethodId"].isna().sum())
@@ -246,17 +212,11 @@ if token_file and schedule_file:
     # Data Quality
     # -----------------------------
     st.subheader("Data Quality Report")
-
     if output["PaymentMethodId"].isna().sum() > 0:
         st.error("Some schedules are missing payment tokens")
-
     if output["AmountMismatch"].sum() > 0:
         st.warning("Some schedules have mismatched project totals")
-
-    if (
-        output["PaymentMethodId"].isna().sum() == 0
-        and output["AmountMismatch"].sum() == 0
-    ):
+    if output["PaymentMethodId"].isna().sum() == 0 and output["AmountMismatch"].sum() == 0:
         st.success("No major data issues detected")
 
     # -----------------------------
@@ -281,7 +241,6 @@ if token_file and schedule_file:
     problem_rows = output[
         (output["AmountMismatch"]) | (output["PaymentMethodId"].isna())
     ]
-
     if len(problem_rows) > 0:
         st.subheader("Download Problem Rows")
         st.download_button(
