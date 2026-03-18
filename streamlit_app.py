@@ -3,12 +3,12 @@ import streamlit as st
 import re
 
 st.set_page_config(
-    page_title="Stax LRD Migration Builder",
+    page_title="💳 LRD Migration Schedule Builder",
     page_icon="💳",
     layout="wide"
 )
 
-st.title("💳 Stax LRD Migration Builder")
+st.title("💳 LRD Migration Schedule Builder")
 st.markdown("Generate recurring schedule migration files from Token, Schedule, and Mapping files.")
 
 # -----------------------------
@@ -29,27 +29,27 @@ if token_file and schedule_file and mapping_file:
     with st.spinner("Processing data..."):
 
         # -----------------------------
-        # Load token file
+        # Load Token File
         # -----------------------------
         tokens = pd.read_csv(token_file)
         tokens["source_old_id"] = tokens.get("old_id", tokens.get("source_old_id"))
         tokens = tokens.drop(columns=[c for c in ["old_id"] if c in tokens.columns])
         tokens["source_old_id"] = tokens["source_old_id"].astype(str)
 
-        # Aggregate tokens to guarantee uniqueness
+        # Aggregate tokens to ensure uniqueness
         tokens_unique = tokens.groupby("source_old_id", as_index=False).agg({
             "created_customer": "first",
             "source_new_id": "first"
         })
 
         # -----------------------------
-        # Load schedule file
+        # Load Schedule File
         # -----------------------------
         schedule = pd.read_csv(schedule_file)
         schedule["Gateway_PaymentTokenId"] = schedule["Gateway_PaymentTokenId"].astype(str)
 
         # -----------------------------
-        # Load mapping file
+        # Load Mapping File
         # -----------------------------
         mapping_df = pd.read_csv(mapping_file)
         mapping_df = mapping_df.rename(columns={
@@ -59,8 +59,14 @@ if token_file and schedule_file and mapping_file:
         mapping_df["source_old_id"] = mapping_df["source_old_id"].astype(str)
         mapping_df["Gateway_PaymentTokenId"] = mapping_df["Gateway_PaymentTokenId"].astype(str)
 
+        # Warn about duplicates in mapping
+        dupes = mapping_df["Gateway_PaymentTokenId"][mapping_df["Gateway_PaymentTokenId"].duplicated()]
+        if not dupes.empty:
+            st.warning(f"Duplicate Gateway_PaymentTokenId values found in mapping file. Only first occurrence will be used: {dupes.tolist()}")
+            mapping_df = mapping_df.drop_duplicates(subset=["Gateway_PaymentTokenId"])
+
         # -----------------------------
-        # Merge tokens into mapping safely
+        # Merge tokens into mapping based on source_old_id
         # -----------------------------
         mapping_df = mapping_df.merge(
             tokens_unique,
@@ -69,7 +75,7 @@ if token_file and schedule_file and mapping_file:
         )
 
         # -----------------------------
-        # Merge mapping info into schedule
+        # Merge mapping info into schedule based on Gateway_PaymentTokenId
         # -----------------------------
         merged = schedule.merge(
             mapping_df[["Gateway_PaymentTokenId", "created_customer", "source_new_id"]],
@@ -84,7 +90,7 @@ if token_file and schedule_file and mapping_file:
             merged = merged[merged["Schedule_Status"].str.upper() != "CANCELLED"]
 
         # -----------------------------
-        # Convert TenderType
+        # Convert TenderType values
         # -----------------------------
         merged["TenderType"] = merged["TenderType"].replace({"CC": "Credit"})
 
@@ -119,6 +125,7 @@ if token_file and schedule_file and mapping_file:
         for out_col, source_col in mapping.items():
             output[out_col] = merged[source_col] if source_col in merged else ""
 
+        # Default DonorPaidCosts
         output["DonorPaidCosts"] = False
 
         # -----------------------------
