@@ -10,29 +10,52 @@ st.set_page_config(
 
 st.title("💳 LRD Migration Landing Page")
 st.markdown(
-    """
-    Welcome! Select which migration workflow you want to run:
-    """
+    "Welcome! Select which migration workflow you want to run:"
 )
-
 st.markdown("---")
 
-# Create two columns for buttons
-col1, col2 = st.columns(2)
+# HTML buttons that open apps in new tabs
+stripe_button = """
+<div style="text-align:center">
+    <a href="https://stripe-lrd.streamlit.app" target="_blank">
+        <button style="
+            background-color:#4CAF50;
+            color:white;
+            padding:20px 40px;
+            font-size:20px;
+            border:none;
+            border-radius:10px;
+            cursor:pointer;
+            margin-right:20px;
+        ">
+            🚀 Stripe / Authorize.net Migration
+        </button>
+    </a>
+</div>
+"""
 
-with col1:
-    if st.button("🚀 Stripe / Authorize.net Migration", key="stripe"):
-        st.markdown(
-            "[Open Stripe / Authorize.net App](https://stripe-lrd.streamlit.app)"
-        )
+stax_button = """
+<div style="text-align:center; margin-top:20px;">
+    <a href="https://lrd-stax.streamlit.app" target="_blank">
+        <button style="
+            background-color:#2196F3;
+            color:white;
+            padding:20px 40px;
+            font-size:20px;
+            border:none;
+            border-radius:10px;
+            cursor:pointer;
+        ">
+            🚀 Stax Migration
+        </button>
+    </a>
+</div>
+"""
 
-with col2:
-    if st.button("🚀 Stax Migration", key="stax"):
-        st.markdown(
-            "[Open Stax App](https://lrd-stax.streamlit.app)"
-        )
+st.markdown(stripe_button, unsafe_allow_html=True)
+st.markdown(stax_button, unsafe_allow_html=True)
 
 st.info(
-    "Click the button above to open the selected app in a new tab. "
+    "Click a button to open the selected app in a new tab. "
     "Each workflow runs independently with its required files."
 )
