@@ -11,7 +11,9 @@ st.set_page_config(
 st.title("💳 LRD Migration Schedule Builder")
 st.markdown("Generate recurring schedule migration files from legacy exports.")
 
+# -----------------------------
 # Sidebar Uploads
+# -----------------------------
 st.sidebar.header("Upload Files")
 token_file = st.sidebar.file_uploader("Token File", type=["csv"])
 schedule_file = st.sidebar.file_uploader("Schedule File", type=["csv", "xlsx"])
@@ -19,7 +21,7 @@ mapping_file = st.sidebar.file_uploader("Mapping File (Optional)", type=["csv", 
 st.sidebar.markdown("---")
 
 if not token_file or not schedule_file:
-    st.sidebar.warning("Waiting for files")
+    st.sidebar.warning("Waiting for files...")
 
 if token_file and schedule_file:
 
@@ -27,43 +29,44 @@ if token_file and schedule_file:
 
     with st.spinner("Processing data..."):
 
-        # Load token file
+        # -----------------------------
+        # Load tokens and schedule
+        # -----------------------------
         tokens = pd.read_csv(token_file)
         tokens["source_old_id"] = tokens.get("old_id", tokens.get("source_old_id"))
         tokens = tokens.drop(columns=[c for c in ["old_id"] if c in tokens.columns])
 
-        # Load schedule file
         if schedule_file.name.endswith(".csv"):
             schedule = pd.read_csv(schedule_file)
         else:
             schedule = pd.read_excel(schedule_file)
 
-        # Optional Mapping File processing
+        # Ensure ID columns are strings for merging
+        tokens["source_old_id"] = tokens["source_old_id"].astype(str)
+        schedule["Gateway_PaymentTokenId"] = schedule["Gateway_PaymentTokenId"].astype(str)
+
+        # -----------------------------
+        # Optional Mapping File Merge
+        # -----------------------------
         if mapping_file:
             if mapping_file.name.endswith(".csv"):
                 mapping_df = pd.read_csv(mapping_file)
             else:
                 mapping_df = pd.read_excel(mapping_file)
 
-            # Standardize column names
+            # Rename mapping columns for consistency
             mapping_df = mapping_df.rename(columns={
                 "reference_token": "source_old_id",
                 "stax_payment_method_id": "Gateway_PaymentTokenId"
             })
 
-            # Ensure strings for merge keys
+            # Ensure strings
             mapping_df["source_old_id"] = mapping_df["source_old_id"].astype(str)
             mapping_df["Gateway_PaymentTokenId"] = mapping_df["Gateway_PaymentTokenId"].astype(str)
-            tokens["source_old_id"] = tokens["source_old_id"].astype(str)
-            schedule["Gateway_PaymentTokenId"] = schedule["Gateway_PaymentTokenId"].astype(str)
 
             # Merge tokens into mapping file
-            token_cols = ["source_old_id", "created_customer", "source_new_id"]
-            for col in ["created_customer", "source_new_id"]:
-                if col in mapping_df.columns:
-                    mapping_df = mapping_df.drop(columns=[col])
             mapping_df = mapping_df.merge(
-                tokens[token_cols],
+                tokens[["source_old_id", "created_customer", "source_new_id"]],
                 on="source_old_id",
                 how="left"
             )
@@ -84,20 +87,28 @@ if token_file and schedule_file:
                 how="left"
             ).drop(columns=["source_old_id"], errors="ignore")
 
+        # -----------------------------
         # Remove cancelled schedules
+        # -----------------------------
         if "Schedule_Status" in merged.columns:
             merged = merged[merged["Schedule_Status"].str.upper() != "CANCELLED"]
 
+        # -----------------------------
         # Convert TenderType
+        # -----------------------------
         merged["TenderType"] = merged["TenderType"].replace({"CC": "Credit"})
 
+        # -----------------------------
         # Format NextPaymentDate
+        # -----------------------------
         if "Schedule_NextChargeDate" in merged.columns:
             merged["Schedule_NextChargeDate"] = pd.to_datetime(
                 merged["Schedule_NextChargeDate"], errors="coerce"
             ).dt.strftime("%m/%d/%Y")
 
+        # -----------------------------
         # Initialize output
+        # -----------------------------
         output = pd.DataFrame()
         mapping = {
             "FirstName": "Donor_FirstName",
@@ -120,7 +131,9 @@ if token_file and schedule_file:
 
         output["DonorPaidCosts"] = False
 
+        # -----------------------------
         # Detect fund/project splits
+        # -----------------------------
         fund_pattern = re.compile(r"Fund(\d+)_Code")
         fund_numbers = sorted([
             int(fund_pattern.match(col).group(1))
@@ -138,7 +151,9 @@ if token_file and schedule_file:
             output[f"Project{i}Name"] = merged[name_col] if name_col in merged else ""
             output[f"Project{i}Amount"] = merged[amount_col] if amount_col in merged else ""
 
+        # -----------------------------
         # Remove CREDITCARDCOSTS and subtract from Schedule Amount
+        # -----------------------------
         for i in range(1, max_funds + 1):
             code_col = f"Project{i}Code"
             name_col = f"Project{i}Name"
@@ -153,17 +168,23 @@ if token_file and schedule_file:
                 output.loc[mask, [code_col, name_col, amount_col]] = ""
                 output.loc[mask, "DonorPaidCosts"] = True
 
+        # -----------------------------
         # Calculate total of remaining project splits
+        # -----------------------------
         project_amount_cols = [col for col in output.columns if "Project" in col and "Amount" in col]
         if project_amount_cols:
             output["ProjectTotal"] = output[project_amount_cols].apply(pd.to_numeric, errors="coerce").sum(axis=1)
         else:
             output["ProjectTotal"] = 0
 
+        # -----------------------------
         # Identify mismatched splits
+        # -----------------------------
         output["AmountMismatch"] = pd.to_numeric(output["Amount"], errors="coerce") != output["ProjectTotal"]
 
+    # -----------------------------
     # Migration Summary Dashboard
+    # -----------------------------
     st.subheader("Migration Summary")
     col1, col2, col3 = st.columns(3)
     col1.metric("Schedules Processed", len(output))
@@ -172,7 +193,9 @@ if token_file and schedule_file:
     mismatched_splits = output["AmountMismatch"].sum()
     col3.metric("Split / Amount Mismatches", mismatched_splits)
 
+    # -----------------------------
     # Data Quality Report
+    # -----------------------------
     st.subheader("Data Quality Report")
     if missing_tokens > 0:
         st.error(f"{missing_tokens} schedules are missing payment tokens")
@@ -181,15 +204,21 @@ if token_file and schedule_file:
     if missing_tokens == 0 and mismatched_splits == 0:
         st.success("No major data issues detected")
 
+    # -----------------------------
     # Output preview
+    # -----------------------------
     st.subheader("Output Preview")
     st.dataframe(output, use_container_width=True)
 
+    # -----------------------------
     # Download full migration file
+    # -----------------------------
     csv = output.to_csv(index=False).encode("utf-8")
     st.download_button("Download Migration File", csv, "recurring_schedule_import.csv", "text/csv")
 
+    # -----------------------------
     # Download problem rows
+    # -----------------------------
     problem_rows = output[(output["AmountMismatch"]) | (output["PaymentMethodId"].isna())]
     if len(problem_rows) > 0:
         st.subheader("Download Problem Rows")
