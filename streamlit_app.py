@@ -8,7 +8,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("💳 LRD Migration Schedule Builder")
+st.title("LRD Migration Schedule Builder")
 st.markdown("Generate recurring schedule migration files from legacy exports.")
 
 # -----------------------------
@@ -17,7 +17,6 @@ st.markdown("Generate recurring schedule migration files from legacy exports.")
 st.sidebar.header("Upload Files")
 token_file = st.sidebar.file_uploader("Token File", type=["csv"])
 schedule_file = st.sidebar.file_uploader("Schedule File", type=["csv", "xlsx"])
-mapping_file = st.sidebar.file_uploader("Mapping File (Optional)", type=["csv", "xlsx"])
 
 if not token_file or not schedule_file:
     st.sidebar.warning("Waiting for required files...")
@@ -29,7 +28,7 @@ if token_file and schedule_file:
 
     with st.spinner("Processing data..."):
 
-        # Load tokens
+        # Load files
         tokens = pd.read_csv(token_file)
         tokens["source_old_id"] = tokens.get("old_id", tokens.get("source_old_id"))
         tokens = tokens.drop(columns=[c for c in ["old_id"] if c in tokens.columns])
@@ -39,55 +38,17 @@ if token_file and schedule_file:
         else:
             schedule = pd.read_excel(schedule_file)
 
-        # Ensure all IDs are strings
+        # Ensure IDs are strings for merging
         tokens["source_old_id"] = tokens["source_old_id"].astype(str)
         schedule["Gateway_PaymentTokenId"] = schedule["Gateway_PaymentTokenId"].astype(str)
 
-        # -----------------------------
-        # Optional Mapping File
-        # -----------------------------
-        if mapping_file:
-            if mapping_file.name.endswith(".csv"):
-                mapping_df = pd.read_csv(mapping_file)
-            else:
-                mapping_df = pd.read_excel(mapping_file)
-
-            # Standardize columns
-            mapping_df = mapping_df.rename(columns={
-                "reference_token": "source_old_id",
-                "stax_payment_method_id": "Gateway_PaymentTokenId"
-            })
-            mapping_df["source_old_id"] = mapping_df["source_old_id"].astype(str)
-            mapping_df["Gateway_PaymentTokenId"] = mapping_df["Gateway_PaymentTokenId"].astype(str)
-
-            # Remove any existing token columns in mapping to prevent duplicates
-            for col in ["created_customer", "source_new_id"]:
-                if col in mapping_df.columns:
-                    mapping_df = mapping_df.drop(columns=[col])
-
-            # Step 1: Merge token info into mapping file
-            mapping_df = mapping_df.merge(
-                tokens[["source_old_id", "created_customer", "source_new_id"]],
-                on="source_old_id",
-                how="left"
-            )
-
-            # Step 2: Merge mapping info into schedule
-            schedule = schedule.merge(
-                mapping_df[["Gateway_PaymentTokenId", "created_customer", "source_new_id"]],
-                on="Gateway_PaymentTokenId",
-                how="left"
-            )
-        else:
-            # No mapping file: merge schedule directly with tokens
-            schedule = schedule.merge(
-                tokens[["source_old_id", "created_customer", "source_new_id"]],
-                left_on="Gateway_PaymentTokenId",
-                right_on="source_old_id",
-                how="left"
-            ).drop(columns=["source_old_id"], errors="ignore")
-
-        merged = schedule.copy()
+        # Merge token data into schedule
+        merged = schedule.merge(
+            tokens[["source_old_id", "created_customer", "source_new_id"]],
+            left_on="Gateway_PaymentTokenId",
+            right_on="source_old_id",
+            how="left"
+        ).drop(columns=["source_old_id"], errors="ignore")
 
         # -----------------------------
         # Remove Cancelled
