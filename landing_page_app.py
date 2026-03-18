@@ -1,23 +1,20 @@
-# lrd_landing_page.py
-
 import streamlit as st
 
 st.set_page_config(
-    page_title="💳 LRD Migration Landing Page",
+    page_title="LRD Migration Landing Page",
     page_icon="💳",
-    layout="wide"
+    layout="centered"
 )
 
-st.title("💳 LRD Migration Landing Page")
+st.title("💳 LRD Migration Builder")
 st.markdown(
-    "Welcome! Select which migration workflow you want to run:"
+    "Choose which migration tool to use. Click a button below to launch the corresponding app."
 )
-st.markdown("---")
 
-# HTML buttons that open apps in new tabs
-stripe_button = """
-<div style="text-align:center">
-    <a href="https://stripe-lrd.streamlit.app" target="_blank">
+# --- Button row with spacing ---
+buttons_html = """
+<div style="text-align:center; margin-top:50px; margin-bottom:60px;">
+    <a href="https://stripe-lrd.streamlit.app" target="_blank" style="margin-right:40px;">
         <button style="
             background-color:#4CAF50;
             color:white;
@@ -26,16 +23,10 @@ stripe_button = """
             border:none;
             border-radius:10px;
             cursor:pointer;
-            margin-right:20px;
         ">
-            🚀 Stripe / Authorize.net Migration
+            💳 Stripe/Authorize.net Migration
         </button>
     </a>
-</div>
-"""
-
-stax_button = """
-<div style="text-align:center; margin-top:20px;">
     <a href="https://lrd-stax.streamlit.app" target="_blank">
         <button style="
             background-color:#2196F3;
@@ -52,10 +43,4 @@ stax_button = """
 </div>
 """
 
-st.markdown(stripe_button, unsafe_allow_html=True)
-st.markdown(stax_button, unsafe_allow_html=True)
-
-st.info(
-    "Click a button to open the selected app in a new tab. "
-    "Each workflow runs independently with its required files."
-)
+st.markdown(buttons_html, unsafe_allow_html=True)
