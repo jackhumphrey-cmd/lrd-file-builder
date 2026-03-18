@@ -35,10 +35,10 @@ if token_file and schedule_file and mapping_file:
         tokens["source_old_id"] = tokens.get("old_id", tokens.get("source_old_id"))
         tokens = tokens.drop(columns=[c for c in ["old_id"] if c in tokens.columns])
         tokens["source_old_id"] = tokens["source_old_id"].astype(str)
-        tokens = tokens.drop_duplicates(subset=["source_old_id"])
+        tokens = tokens.drop_duplicates(subset=["source_old_id"])  # ✅ prevent merge errors
 
         # -----------------------------
-        # Load schedule
+        # Load schedule file
         # -----------------------------
         schedule = pd.read_csv(schedule_file)
         schedule["Gateway_PaymentTokenId"] = schedule["Gateway_PaymentTokenId"].astype(str)
@@ -53,7 +53,11 @@ if token_file and schedule_file and mapping_file:
         })
         mapping_df["source_old_id"] = mapping_df["source_old_id"].astype(str)
         mapping_df["Gateway_PaymentTokenId"] = mapping_df["Gateway_PaymentTokenId"].astype(str)
-        mapping_df = mapping_df.drop_duplicates(subset=["source_old_id"])
+
+        # Drop duplicates in mapping file
+        if mapping_df["source_old_id"].duplicated().any():
+            st.warning("Mapping file contains duplicate source_old_id values. Only the first instance will be used.")
+            mapping_df = mapping_df.drop_duplicates(subset=["source_old_id"])
 
         # -----------------------------
         # Merge tokens into mapping
