@@ -32,10 +32,7 @@ if token_file and schedule_file and mapping_file:
         # Load Token File
         # -----------------------------
         tokens = pd.read_csv(token_file)
-        tokens["source_old_id"] = tokens.get("old_id", tokens.get("source_old_id")).astype(str)
-        tokens = tokens.drop(columns=[c for c in ["old_id"] if c in tokens.columns])
-
-        # Ensure unique token mapping
+        tokens["source_old_id"] = tokens.get("old_id", tokens.get("source_old_id")).astype(str).fillna("")
         tokens_unique = tokens.groupby("source_old_id", as_index=False).agg({
             "created_customer": "first",
             "source_new_id": "first"
@@ -45,7 +42,7 @@ if token_file and schedule_file and mapping_file:
         # Load Schedule File
         # -----------------------------
         schedule = pd.read_csv(schedule_file)
-        schedule["Gateway_PaymentTokenId"] = schedule["Gateway_PaymentTokenId"].astype(str)
+        schedule["Gateway_PaymentTokenId"] = schedule["Gateway_PaymentTokenId"].astype(str).fillna("")
 
         # -----------------------------
         # Load Mapping File
@@ -55,8 +52,8 @@ if token_file and schedule_file and mapping_file:
             "reference_token": "source_old_id",
             "stax_payment_method_id": "Gateway_PaymentTokenId"
         })
-        mapping_df["source_old_id"] = mapping_df["source_old_id"].astype(str)
-        mapping_df["Gateway_PaymentTokenId"] = mapping_df["Gateway_PaymentTokenId"].astype(str)
+        mapping_df["source_old_id"] = mapping_df["source_old_id"].astype(str).fillna("")
+        mapping_df["Gateway_PaymentTokenId"] = mapping_df["Gateway_PaymentTokenId"].astype(str).fillna("")
 
         # -----------------------------
         # Build lookup for first-successful mapping
@@ -69,17 +66,17 @@ if token_file and schedule_file and mapping_file:
             gateway_to_token_rows[gateway].append(row)
 
         # -----------------------------
-        # Map tokens for each schedule row
+        # Map tokens for each schedule row (first successful match)
         # -----------------------------
         created_customers = []
         source_new_ids = []
 
         for _, sched_row in schedule.iterrows():
-            gateway = sched_row["Gateway_PaymentTokenId"]
+            gateway = str(sched_row["Gateway_PaymentTokenId"])
             mapped = False
             if gateway in gateway_to_token_rows:
                 for map_row in gateway_to_token_rows[gateway]:
-                    old_id = map_row["source_old_id"]
+                    old_id = str(map_row["source_old_id"])
                     token_match = tokens_unique[tokens_unique["source_old_id"] == old_id]
                     if not token_match.empty:
                         created_customers.append(token_match["created_customer"].values[0])
@@ -93,7 +90,7 @@ if token_file and schedule_file and mapping_file:
         schedule["created_customer"] = created_customers
         schedule["source_new_id"] = source_new_ids
 
-        # Drop rows with no successful mapping
+        # Drop unmapped rows
         schedule = schedule[schedule["created_customer"].notna()]
 
         # -----------------------------
