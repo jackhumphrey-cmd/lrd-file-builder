@@ -10,7 +10,7 @@ st.set_page_config(
 # Header
 # -----------------------------
 st.markdown(
-    "<h1 style='text-align: center;'>💳 LRD Migration Hub</h1>",
+    "<h1 style='text-align: center;'>LRD Migration Hub</h1>",
     unsafe_allow_html=True
 )
 
@@ -27,7 +27,7 @@ st.markdown("---")
 col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown("### 💳 Stripe / Authorize.net")
+    st.markdown("### Stripe / Authorize.net")
     st.caption("Direct token-based migrations with simple mapping.")
     st.link_button(
         "Launch App →",
@@ -36,7 +36,7 @@ with col1:
     )
 
 with col2:
-    st.markdown("### 🚀 Stax Migration")
+    st.markdown("### Stax Migration")
     st.caption("Token + mapping-based migration with intelligent matching.")
     st.link_button(
         "Launch App →",
