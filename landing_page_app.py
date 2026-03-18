@@ -6,7 +6,9 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- Custom CSS Styling ---
+# -----------------------------
+# CSS Styling
+# -----------------------------
 st.markdown("""
 <style>
 /* Background */
@@ -14,16 +16,12 @@ body {
     background: linear-gradient(135deg, #0f172a, #1e293b);
 }
 
-/* Center container */
-.main {
-    text-align: center;
-}
-
-/* Title styling */
+/* Title */
 .title {
     font-size: 42px;
     font-weight: 700;
     color: white;
+    text-align: center;
     margin-bottom: 10px;
 }
 
@@ -31,6 +29,7 @@ body {
 .subtitle {
     font-size: 18px;
     color: #cbd5f5;
+    text-align: center;
     margin-bottom: 40px;
 }
 
@@ -50,9 +49,10 @@ body {
     width: 280px;
     box-shadow: 0px 10px 25px rgba(0,0,0,0.4);
     transition: transform 0.25s ease, box-shadow 0.25s ease;
+    text-align: center;
 }
 
-/* Card hover */
+/* Hover */
 .card:hover {
     transform: translateY(-8px);
     box-shadow: 0px 20px 40px rgba(0,0,0,0.6);
@@ -65,7 +65,7 @@ body {
     margin-bottom: 10px;
 }
 
-/* Card description */
+/* Description */
 .card-desc {
     font-size: 14px;
     color: #9ca3af;
@@ -106,37 +106,40 @@ body {
     margin-top: 60px;
     font-size: 13px;
     color: #6b7280;
+    text-align: center;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# --- Header ---
+# -----------------------------
+# Header
+# -----------------------------
 st.markdown('<div class="title">💳 LRD Migration Hub</div>', unsafe_allow_html=True)
 st.markdown(
     '<div class="subtitle">Choose your migration workflow to get started</div>',
     unsafe_allow_html=True
 )
 
-# --- Cards ---
+# -----------------------------
+# Cards
+# -----------------------------
 st.markdown("""
 <div class="card-container">
 
-    <!-- Stripe Card -->
     <div class="card">
         <div class="card-title">💳 Stripe / Authorize.net</div>
         <div class="card-desc">
-            Use this workflow for direct token-based migrations with simple mapping.
+            Direct token-based migrations with simple mapping.
         </div>
         <a href="https://stripe-lrd.streamlit.app" target="_blank" class="button stripe">
             Launch App →
         </a>
     </div>
 
-    <!-- Stax Card -->
     <div class="card">
         <div class="card-title">🚀 Stax Migration</div>
         <div class="card-desc">
-            Use this workflow for Stax migrations requiring token + mapping resolution.
+            Token + mapping-based migration with intelligent matching.
         </div>
         <a href="https://lrd-stax.streamlit.app" target="_blank" class="button stax">
             Launch App →
@@ -146,7 +149,9 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# --- Footer ---
+# -----------------------------
+# Footer
+# -----------------------------
 st.markdown(
     '<div class="footer">Built for efficient recurring data migrations • LRD Tools</div>',
     unsafe_allow_html=True
