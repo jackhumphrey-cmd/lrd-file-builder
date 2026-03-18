@@ -46,7 +46,6 @@ def process_output(merged, token_col, customer_col):
         "PlatformReferenceId": "RD_Schedule_Id"
     }
 
-    # Map columns
     for out_col, source_col in mapping.items():
         output[out_col] = merged[source_col] if source_col in merged else ""
 
@@ -169,8 +168,44 @@ elif workflow == "Stax Migration":
     stax_mapping = st.file_uploader("Mapping File", type=["csv"], key="stax_mapping")
 
     if stax_token and stax_schedule and stax_mapping:
-        st.session_state.stax_token = stax_token
-        st.session_state.stax_schedule = stax_schedule
-        st.session_state.stax_mapping = stax_mapping
+        with st.spinner("Processing Stax migration..."):
+            # Read CSVs
+            tokens = pd.read_csv(stax_token)
+            schedule = pd.read_csv(stax_schedule)
+            mapping_df = pd.read_csv(stax_mapping)
 
-        import stax_workflow  # Runs the full Stax workflow using uploaded session state
+            # Clean mapping
+            mapping_df["old_id"] = mapping_df["old_id"].astype(str).str.strip()
+            tokens["source_old_id"] = tokens["source_old_id"].astype(str).str.strip()
+            tokens["stax_payment_method_id"] = tokens["stax_payment_method_id"].astype(str).str.strip()
+
+            # Map tokens via mapping file
+            merged_mapping = mapping_df.merge(
+                tokens[["source_old_id", "created_customer", "source_new_id"]],
+                left_on="old_id",
+                right_on="source_old_id",
+                how="left"
+            )
+
+            merged_mapping["Gateway_PaymentTokenId"] = merged_mapping["stax_payment_method_id"]
+            merged_mapping = merged_mapping.drop(columns=["source_old_id", "stax_payment_method_id"])
+
+            # Merge mapping into schedule
+            merged = schedule.merge(
+                merged_mapping,
+                on="Gateway_PaymentTokenId",
+                how="left"
+            )
+
+            if "Schedule_Status" in merged.columns:
+                merged = merged[merged["Schedule_Status"].str.upper() != "CANCELLED"]
+
+            merged["TenderType"] = merged["TenderType"].replace({"CC": "Credit"})
+
+            if "Schedule_NextChargeDate" in merged.columns:
+                merged["Schedule_NextChargeDate"] = pd.to_datetime(
+                    merged["Schedule_NextChargeDate"], errors="coerce"
+                ).dt.strftime("%m/%d/%Y")
+
+            output = process_output(merged, "source_new_id", "created_customer")
+            display_dashboard(output)
