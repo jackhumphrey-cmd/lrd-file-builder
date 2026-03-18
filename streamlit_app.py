@@ -104,6 +104,19 @@ if token_file and schedule_file:
         ).drop(columns=["source_old_id"])
 
         # -----------------------------
+        # Mapping Preview Table
+        # -----------------------------
+        st.subheader("Token Mapping Preview")
+        preview_cols = ["RD_Schedule_Id", "Gateway_PaymentTokenId", "created_customer", "source_new_id"]
+        existing_cols = [col for col in preview_cols if col in merged.columns]
+
+        if existing_cols:
+            st.dataframe(merged[existing_cols].head(20), use_container_width=True)
+            st.info("Check that 'created_customer' and 'source_new_id' are correctly populated based on the token mapping.")
+        else:
+            st.warning("Mapping preview columns not found in merged data.")
+
+        # -----------------------------
         # Remove Cancelled
         # -----------------------------
         if "Schedule_Status" in merged.columns:
