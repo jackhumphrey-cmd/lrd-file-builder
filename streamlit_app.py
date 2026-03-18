@@ -32,7 +32,7 @@ if token_file and schedule_file and mapping_file:
         # Load Token File
         # -----------------------------
         tokens = pd.read_csv(token_file)
-        tokens["source_old_id"] = tokens.get("old_id", tokens.get("source_old_id")).astype(str).fillna("")
+        tokens["source_old_id"] = tokens.get("old_id", tokens.get("source_old_id")).astype(str).str.strip()
         tokens_unique = tokens.groupby("source_old_id", as_index=False).agg({
             "created_customer": "first",
             "source_new_id": "first"
@@ -42,7 +42,7 @@ if token_file and schedule_file and mapping_file:
         # Load Schedule File
         # -----------------------------
         schedule = pd.read_csv(schedule_file)
-        schedule["Gateway_PaymentTokenId"] = schedule["Gateway_PaymentTokenId"].astype(str).fillna("")
+        schedule["Gateway_PaymentTokenId"] = schedule["Gateway_PaymentTokenId"].astype(str).str.strip()
 
         # -----------------------------
         # Load Mapping File
@@ -52,8 +52,8 @@ if token_file and schedule_file and mapping_file:
             "reference_token": "source_old_id",
             "stax_payment_method_id": "Gateway_PaymentTokenId"
         })
-        mapping_df["source_old_id"] = mapping_df["source_old_id"].astype(str).fillna("")
-        mapping_df["Gateway_PaymentTokenId"] = mapping_df["Gateway_PaymentTokenId"].astype(str).fillna("")
+        mapping_df["source_old_id"] = mapping_df["source_old_id"].astype(str).str.strip()
+        mapping_df["Gateway_PaymentTokenId"] = mapping_df["Gateway_PaymentTokenId"].astype(str).str.strip()
 
         # -----------------------------
         # Build lookup for first-successful mapping
