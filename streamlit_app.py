@@ -45,14 +45,20 @@ if token_file and schedule_file and mapping_file:
         schedule["Gateway_PaymentTokenId"] = schedule["Gateway_PaymentTokenId"].astype(str).str.strip()
 
         # -----------------------------
-        # Load Mapping File
+        # Load Mapping File safely
         # -----------------------------
         mapping_df = pd.read_csv(mapping_file)
+
+        expected_cols = ["old_id", "stax_payment_method_id"]
+        for col in expected_cols:
+            if col not in mapping_df.columns:
+                st.error(f"Mapping file is missing required column: '{col}'")
+                st.stop()
+
         mapping_df = mapping_df.rename(columns={
-            "reference_token": "source_old_id",
             "stax_payment_method_id": "Gateway_PaymentTokenId"
         })
-        mapping_df["source_old_id"] = mapping_df["source_old_id"].astype(str).str.strip()
+        mapping_df["old_id"] = mapping_df["old_id"].astype(str).str.strip()
         mapping_df["Gateway_PaymentTokenId"] = mapping_df["Gateway_PaymentTokenId"].astype(str).str.strip()
 
         # -----------------------------
@@ -66,7 +72,7 @@ if token_file and schedule_file and mapping_file:
             gateway_to_token_rows[gateway].append(row)
 
         # -----------------------------
-        # Map tokens for each schedule row (first successful match)
+        # Map tokens for each schedule row
         # -----------------------------
         created_customers = []
         source_new_ids = []
@@ -76,7 +82,7 @@ if token_file and schedule_file and mapping_file:
             mapped = False
             if gateway in gateway_to_token_rows:
                 for map_row in gateway_to_token_rows[gateway]:
-                    old_id = str(map_row["source_old_id"])
+                    old_id = str(map_row["old_id"])
                     token_match = tokens_unique[tokens_unique["source_old_id"] == old_id]
                     if not token_match.empty:
                         created_customers.append(token_match["created_customer"].values[0])
