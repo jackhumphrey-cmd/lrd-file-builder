@@ -24,7 +24,7 @@ buttons_html = """
             border-radius:10px;
             cursor:pointer;
         ">
-            💳 Stripe/Authorize.net Migration
+            Stripe/Authorize.net Migration
         </button>
     </a>
     <a href="https://lrd-stax.streamlit.app" target="_blank">
@@ -37,7 +37,7 @@ buttons_html = """
             border-radius:10px;
             cursor:pointer;
         ">
-            🚀 Stax Migration
+            Stax Migration
         </button>
     </a>
 </div>
