@@ -35,7 +35,12 @@ if token_file and schedule_file and mapping_file:
         tokens["source_old_id"] = tokens.get("old_id", tokens.get("source_old_id"))
         tokens = tokens.drop(columns=[c for c in ["old_id"] if c in tokens.columns])
         tokens["source_old_id"] = tokens["source_old_id"].astype(str)
-        tokens = tokens.drop_duplicates(subset=["source_old_id"])  # ✅ prevent merge errors
+
+        # Aggregate tokens to guarantee uniqueness
+        tokens_unique = tokens.groupby("source_old_id", as_index=False).agg({
+            "created_customer": "first",
+            "source_new_id": "first"
+        })
 
         # -----------------------------
         # Load schedule file
@@ -54,16 +59,11 @@ if token_file and schedule_file and mapping_file:
         mapping_df["source_old_id"] = mapping_df["source_old_id"].astype(str)
         mapping_df["Gateway_PaymentTokenId"] = mapping_df["Gateway_PaymentTokenId"].astype(str)
 
-        # Drop duplicates in mapping file
-        if mapping_df["source_old_id"].duplicated().any():
-            st.warning("Mapping file contains duplicate source_old_id values. Only the first instance will be used.")
-            mapping_df = mapping_df.drop_duplicates(subset=["source_old_id"])
-
         # -----------------------------
-        # Merge tokens into mapping
+        # Merge tokens into mapping safely
         # -----------------------------
         mapping_df = mapping_df.merge(
-            tokens[["source_old_id", "created_customer", "source_new_id"]],
+            tokens_unique,
             on="source_old_id",
             how="left"
         )
