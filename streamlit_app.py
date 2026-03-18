@@ -15,9 +15,9 @@ st.markdown("Generate recurring schedule migration files with optional mapping f
 # Sidebar Uploads
 # -----------------------------
 st.sidebar.header("Upload Files")
-token_file = st.sidebar.file_uploader("Token File", type=["csv"])
-schedule_file = st.sidebar.file_uploader("Schedule File", type=["csv", "xlsx"])
-mapping_file = st.sidebar.file_uploader("Mapping File (Optional)", type=["csv", "xlsx"])
+token_file = st.sidebar.file_uploader("Token File (CSV)", type=["csv"])
+schedule_file = st.sidebar.file_uploader("Schedule File (CSV)", type=["csv"])
+mapping_file = st.sidebar.file_uploader("Mapping File (CSV, Optional)", type=["csv"])
 st.sidebar.markdown("---")
 
 if not token_file or not schedule_file:
@@ -35,32 +35,26 @@ if token_file and schedule_file:
         tokens["source_old_id"] = tokens.get("old_id", tokens.get("source_old_id"))
         tokens = tokens.drop(columns=[c for c in ["old_id"] if c in tokens.columns])
         tokens["source_old_id"] = tokens["source_old_id"].astype(str)
+        tokens = tokens.drop_duplicates(subset=["source_old_id"])
 
         # -----------------------------
         # Load schedule
         # -----------------------------
-        if schedule_file.name.endswith(".csv"):
-            schedule = pd.read_csv(schedule_file)
-        else:
-            schedule = pd.read_excel(schedule_file)
+        schedule = pd.read_csv(schedule_file)
         schedule["Gateway_PaymentTokenId"] = schedule["Gateway_PaymentTokenId"].astype(str)
 
         # -----------------------------
         # Merge tokens (with optional mapping)
         # -----------------------------
         if mapping_file:
-            if mapping_file.name.endswith(".csv"):
-                mapping_df = pd.read_csv(mapping_file)
-            else:
-                mapping_df = pd.read_excel(mapping_file)
-
+            mapping_df = pd.read_csv(mapping_file)
             mapping_df = mapping_df.rename(columns={
                 "reference_token": "source_old_id",
                 "stax_payment_method_id": "Gateway_PaymentTokenId"
             })
-
             mapping_df["source_old_id"] = mapping_df["source_old_id"].astype(str)
             mapping_df["Gateway_PaymentTokenId"] = mapping_df["Gateway_PaymentTokenId"].astype(str)
+            mapping_df = mapping_df.drop_duplicates(subset=["source_old_id"])
 
             # Merge tokens into mapping file
             mapping_df = mapping_df.merge(
