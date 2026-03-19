@@ -7,30 +7,26 @@ st.set_page_config(
 )
 
 # -----------------------------
-# Custom CSS
+# CSS
 # -----------------------------
 st.markdown("""
 <style>
 
-/* Background */
 .stApp {
     background: linear-gradient(135deg, #f7f9fc 0%, #e6ecf5 100%);
     color: #111111;
 }
 
-/* Container width */
 .block-container {
     max-width: 800px;
     padding-top: 2rem;
 }
 
-/* Header */
 .title {
     text-align: center;
     font-size: 42px;
     font-weight: 700;
     margin-bottom: 0;
-    color: #111;
 }
 
 .subtitle {
@@ -39,7 +35,6 @@ st.markdown("""
     margin-bottom: 2rem;
 }
 
-/* Card styling */
 .card {
     background: #ffffff;
     padding: 25px;
@@ -49,7 +44,6 @@ st.markdown("""
     height: 100%;
 }
 
-/* Hover effect */
 .card:hover {
     background: #111111;
     color: #ffffff;
@@ -57,35 +51,29 @@ st.markdown("""
     box-shadow: 0 12px 30px rgba(0,0,0,0.15);
 }
 
-/* Text inversion on hover */
+.card:hover h3,
 .card:hover p,
-.card:hover div,
-.card:hover span,
-.card:hover h3 {
+.card:hover span {
     color: #ffffff !important;
 }
 
-/* Button styling (targets Streamlit link button) */
-.stLinkButton > a {
-    background-color: #111111;
-    color: #ffffff !important;
-    border-radius: 10px;
-    padding: 10px 16px;
-    text-align: center;
-    display: inline-block;
+/* Style Streamlit buttons */
+.stButton > button {
     width: 100%;
+    border-radius: 10px;
+    background-color: #111111;
+    color: #ffffff;
     border: 1px solid #111111;
     transition: all 0.25s ease;
 }
 
 /* Button hover inversion */
-.stLinkButton > a:hover {
+.stButton > button:hover {
     background-color: #ffffff;
-    color: #111111 !important;
+    color: #111111;
     border: 1px solid #111111;
 }
 
-/* Footer */
 .footer {
     text-align: center;
     font-size: 12px;
@@ -111,22 +99,26 @@ with col1:
     st.markdown("<div class='card'>", unsafe_allow_html=True)
     st.markdown("### Stripe / Authorize.net")
     st.caption("Direct token-based migrations with simple mapping.")
+    
     st.link_button(
         "Launch App →",
         "https://stripe-lrd.streamlit.app",
         use_container_width=True
     )
+
     st.markdown("</div>", unsafe_allow_html=True)
 
 with col2:
     st.markdown("<div class='card'>", unsafe_allow_html=True)
     st.markdown("### Stax Migrations")
     st.caption("Token + mapping-based migration with intelligent matching.")
+    
     st.link_button(
         "Launch App →",
         "https://lrd-stax.streamlit.app",
         use_container_width=True
     )
+
     st.markdown("</div>", unsafe_allow_html=True)
 
 # -----------------------------
