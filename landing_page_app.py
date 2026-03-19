@@ -7,12 +7,12 @@ st.set_page_config(
 )
 
 # -----------------------------
-# CSS (hover inversion)
+# CSS
 # -----------------------------
 st.markdown("""
 <style>
 
-/* Page background */
+/* Background */
 .stApp {
     background: #f7f9fc;
 }
@@ -30,7 +30,12 @@ st.markdown("""
     margin-bottom: 2rem;
 }
 
-/* Card styling via column containers */
+/* Card link wrapper */
+.card-link {
+    text-decoration: none;
+}
+
+/* Card */
 .card {
     background: #ffffff;
     padding: 24px;
@@ -38,43 +43,25 @@ st.markdown("""
     border: 1px solid #e0e6ef;
     transition: all 0.25s ease;
     height: 100%;
+    cursor: pointer;
 }
 
 /* Hover inversion */
 .card:hover {
     background: #111111;
     color: #ffffff;
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+    transform: translateY(-6px);
+    box-shadow: 0 12px 28px rgba(0,0,0,0.15);
 }
 
-/* Ensure text flips */
-.card:hover p,
+/* Text inversion */
 .card:hover h3,
+.card:hover p,
 .card:hover span {
     color: #ffffff !important;
 }
 
-/* Buttons */
-.stLinkButton > a {
-    background-color: #111111;
-    color: #ffffff !important;
-    border-radius: 10px;
-    padding: 10px 16px;
-    text-align: center;
-    display: inline-block;
-    width: 100%;
-    border: 1px solid #111111;
-    transition: all 0.25s ease;
-}
-
-/* Button hover inversion */
-.stLinkButton > a:hover {
-    background-color: #ffffff;
-    color: #111111 !important;
-    border: 1px solid #111111;
-}
-
+/* Footer */
 .footer {
     text-align: center;
     font-size: 12px;
@@ -92,31 +79,29 @@ st.markdown("<div class='title'>💳 LRD Migration Hub</div>", unsafe_allow_html
 st.markdown("<div class='subtitle'>Choose your migration workflow to get started</div>", unsafe_allow_html=True)
 
 # -----------------------------
-# Columns (cards)
+# Cards (Clickable)
 # -----------------------------
 col1, col2 = st.columns(2, gap="large")
 
 with col1:
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.markdown("### Stripe / Authorize.net Migrations")
-    st.caption("Direct token-based migrations with simple mapping.")
-    st.link_button(
-        "Launch App →",
-        "https://stripe-lrd.streamlit.app",
-        use_container_width=True
-    )
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("""
+    <a class="card-link" href="https://stripe-lrd.streamlit.app" target="_self">
+        <div class="card">
+            <h3>Stripe / Authorize.net Migrations</h3>
+            <p>Direct token-based migrations with simple mapping.</p>
+        </div>
+    </a>
+    """, unsafe_allow_html=True)
 
 with col2:
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.markdown("### Stax Migrations")
-    st.caption("Token + mapping-based migration with intelligent matching.")
-    st.link_button(
-        "Launch App →",
-        "https://lrd-stax.streamlit.app",
-        use_container_width=True
-    )
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("""
+    <a class="card-link" href="https://lrd-stax.streamlit.app" target="_self">
+        <div class="card">
+            <h3>Stax Migrations</h3>
+            <p>Token + mapping-based migration with intelligent matching.</p>
+        </div>
+    </a>
+    """, unsafe_allow_html=True)
 
 # -----------------------------
 # Footer
