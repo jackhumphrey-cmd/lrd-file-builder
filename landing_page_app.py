@@ -16,7 +16,6 @@ st.markdown("""
     background: #f7f9fc;
 }
 
-/* Header */
 .title {
     text-align: center;
     font-size: 40px;
@@ -29,17 +28,17 @@ st.markdown("""
     margin-bottom: 2rem;
 }
 
-/* Card */
+/* Card look applied to a container div */
 .card {
     background: #ffffff;
     padding: 24px;
     border-radius: 14px;
     border: 1px solid #e0e6ef;
     transition: all 0.25s ease;
-    height: 100%;
+    margin-bottom: 0;
 }
 
-/* Hover inversion */
+/* Hover effect */
 .card:hover {
     background: #111111;
     color: #ffffff;
@@ -53,7 +52,7 @@ st.markdown("""
     color: #ffffff !important;
 }
 
-/* Button styling */
+/* Style Streamlit link button */
 .stLinkButton > a {
     background-color: #111111;
     color: #ffffff !important;
@@ -63,17 +62,15 @@ st.markdown("""
     display: inline-block;
     width: 100%;
     border: 1px solid #111111;
-    transition: all 0.25s ease;
 }
 
-/* Button hover inversion */
+/* Hover inversion */
 .stLinkButton > a:hover {
     background-color: #ffffff;
     color: #111111 !important;
     border: 1px solid #111111;
 }
 
-/* Footer */
 .footer {
     text-align: center;
     font-size: 12px;
@@ -91,7 +88,7 @@ st.markdown("<div class='title'>💳 LRD Migration Hub</div>", unsafe_allow_html
 st.markdown("<div class='subtitle'>Choose your migration workflow to get started</div>", unsafe_allow_html=True)
 
 # -----------------------------
-# Layout
+# Columns
 # -----------------------------
 col1, col2 = st.columns(2, gap="large")
 
@@ -99,7 +96,7 @@ with col1:
     st.markdown("<div class='card'>", unsafe_allow_html=True)
     st.markdown("### Stripe / Authorize.net Migrations")
     st.caption("Direct token-based migrations with simple mapping.")
-    
+
     st.link_button(
         "Launch App →",
         "https://stripe-lrd.streamlit.app",
@@ -112,7 +109,7 @@ with col2:
     st.markdown("<div class='card'>", unsafe_allow_html=True)
     st.markdown("### Stax Migrations")
     st.caption("Token + mapping-based migration with intelligent matching.")
-    
+
     st.link_button(
         "Launch App →",
         "https://lrd-stax.streamlit.app",
