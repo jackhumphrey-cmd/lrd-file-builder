@@ -49,7 +49,7 @@ st.markdown("""
     height: 100%;
 }
 
-/* 🔥 Card hover = FULL INVERSION */
+/* Card hover inversion */
 .card:hover {
     background: #111111;
     color: #ffffff;
@@ -63,26 +63,6 @@ st.markdown("""
 .card:hover span,
 .card:hover h3 {
     color: #ffffff !important;
-}
-
-/* Buttons */
-.stLinkButton > a {
-    background-color: #111111;
-    color: #ffffff !important;
-    border-radius: 10px;
-    padding: 10px 16px;
-    text-align: center;
-    display: inline-block;
-    width: 100%;
-    transition: all 0.25s ease;
-    border: 1px solid #111111;
-}
-
-/* 🔥 Button hover = INVERT */
-.stLinkButton > a:hover {
-    background-color: #ffffff;
-    color: #111111 !important;
-    border: 1px solid #111111;
 }
 
 /* Footer */
@@ -103,7 +83,7 @@ st.markdown("<div class='title'>💳 LRD Migration Hub</div>", unsafe_allow_html
 st.markdown("<div class='subtitle'>Choose your migration workflow to get started</div>", unsafe_allow_html=True)
 
 # -----------------------------
-# Cards Layout
+# Cards Layout (no buttons)
 # -----------------------------
 col1, col2 = st.columns(2, gap="large")
 
@@ -111,22 +91,12 @@ with col1:
     st.markdown("<div class='card'>", unsafe_allow_html=True)
     st.markdown("### Stripe / Authorize.net")
     st.caption("Direct token-based migrations with simple mapping.")
-    st.link_button(
-        "Launch App →",
-        "https://stripe-lrd.streamlit.app",
-        use_container_width=True
-    )
     st.markdown("</div>", unsafe_allow_html=True)
 
 with col2:
     st.markdown("<div class='card'>", unsafe_allow_html=True)
     st.markdown("### Stax Migrations")
     st.caption("Token + mapping-based migration with intelligent matching.")
-    st.link_button(
-        "Launch App →",
-        "https://lrd-stax.streamlit.app",
-        use_container_width=True
-    )
     st.markdown("</div>", unsafe_allow_html=True)
 
 # -----------------------------
