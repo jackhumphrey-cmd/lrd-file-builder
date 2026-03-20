@@ -84,10 +84,15 @@ html, body, [class*="css"] {
     box-shadow: 0 1px 3px rgba(11,126,163,0.05), 0 4px 12px rgba(11,126,163,0.06);
 }
 [data-testid="stMetricLabel"] {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    line-height: 1.35 !important;
+    margin-bottom: 0.4rem !important;
     font-family: 'DM Sans', sans-serif !important;
     font-size: 0.68rem !important;
     font-weight: 500 !important;
-    letter-spacing: 0.06em !important;
+    letter-spacing: 0.04em !important;
     text-transform: uppercase !important;
     color: #7aaabb !important;
 }
