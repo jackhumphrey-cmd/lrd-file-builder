@@ -80,12 +80,12 @@ html, body, [class*="css"] {
     background: #ffffff;
     border: 1px solid rgba(11,126,163,0.1);
     border-radius: 14px;
-    padding: 1rem 1.2rem !important;
+    padding: 1.4rem 1.6rem !important;
     box-shadow: 0 1px 3px rgba(11,126,163,0.05), 0 4px 12px rgba(11,126,163,0.06);
 }
 [data-testid="stMetricLabel"] {
     font-family: 'DM Sans', sans-serif !important;
-    font-size: 0.72rem !important;
+    font-size: 0.68rem !important;
     font-weight: 500 !important;
     letter-spacing: 0.06em !important;
     text-transform: uppercase !important;
@@ -93,7 +93,7 @@ html, body, [class*="css"] {
 }
 [data-testid="stMetricValue"] {
     font-family: 'Syne', sans-serif !important;
-    font-size: 1.9rem !important;
+    font-size: 1.4rem !important;
     font-weight: 700 !important;
     color: #0d2d3d !important;
 }
@@ -103,6 +103,17 @@ h2, h3 {
     font-family: 'Syne', sans-serif !important;
     color: #0d2d3d !important;
     letter-spacing: -0.02em !important;
+}
+
+/* ── File uploaders ── */
+[data-testid="stFileUploader"] {
+    border: 1px solid rgba(11,126,163,0.2) !important;
+    border-radius: 12px !important;
+    padding: 0.5rem 0.75rem !important;
+    background: rgba(240,247,251,0.6) !important;
+}
+[data-testid="stFileUploader"]:hover {
+    border-color: rgba(11,126,163,0.4) !important;
 }
 
 /* ── Alerts ── */
