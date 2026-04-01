@@ -305,6 +305,11 @@ if token_file and schedule_file and mapping_file:
         for out_col, source_col in mapping.items():
             output[out_col] = schedule[source_col] if source_col in schedule else ""
 
+        # FIX: Cast Amount to object dtype so empty-string assignments in the
+        # CREDITCARDCOSTS block below don't raise a TypeError in newer pandas
+        # versions that enforce strict dtype compatibility on .loc assignments.
+        output["Amount"] = output["Amount"].astype(object)
+
         output["DonorPaidCosts"] = False
 
         # -----------------------------
@@ -318,14 +323,28 @@ if token_file and schedule_file and mapping_file:
         ])
         max_funds = max(fund_numbers) if fund_numbers else 0
 
-for i in range(1, max_funds + 1):
-    code_col = f"Project{i}Code"
-    name_col = f"Project{i}Name"
-    amount_col = f"Project{i}Amount"
+        for i in range(1, max_funds + 1):
+            code_col = f"Fund{i}_Code"
+            name_col = f"Fund{i}_Name"
+            amount_col = f"Fund{i}_Amount"
 
-    output[f"Project{i}Code"] = (schedule[code_col] if code_col in schedule else "").astype(object)
-    output[f"Project{i}Name"] = (schedule[name_col] if name_col in schedule else "").astype(object)
-    output[f"Project{i}Amount"] = (schedule[amount_col] if amount_col in schedule else pd.Series(dtype=object)).astype(object)
+            # FIX: Cast all three project columns to object dtype immediately on
+            # creation. Newer pandas raises TypeError when assigning "" to a
+            # column that was inferred as numeric (e.g. float64). Using object
+            # dtype accepts mixed types (strings, numbers, None) and keeps the
+            # downstream pd.to_numeric(..., errors="coerce") logic intact.
+            output[f"Project{i}Code"] = (
+                schedule[code_col].astype(object) if code_col in schedule.columns
+                else pd.Series("", index=output.index, dtype=object)
+            )
+            output[f"Project{i}Name"] = (
+                schedule[name_col].astype(object) if name_col in schedule.columns
+                else pd.Series("", index=output.index, dtype=object)
+            )
+            output[f"Project{i}Amount"] = (
+                schedule[amount_col].astype(object) if amount_col in schedule.columns
+                else pd.Series("", index=output.index, dtype=object)
+            )
 
         # -----------------------------
         # Remove CREDITCARDCOSTS and adjust Amount
@@ -357,7 +376,6 @@ for i in range(1, max_funds + 1):
         # Identify mismatched splits
         # -----------------------------
         output["AmountMismatch"] = pd.to_numeric(output["Amount"], errors="coerce") != output["ProjectTotal"]
-    output["Amount"] = output["Amount"].astype(object)
 
     # -----------------------------
     # Migration Summary Dashboard
