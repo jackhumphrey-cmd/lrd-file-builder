@@ -318,14 +318,14 @@ if token_file and schedule_file and mapping_file:
         ])
         max_funds = max(fund_numbers) if fund_numbers else 0
 
-        for i in range(1, max_funds + 1):
-            code_col = f"Fund{i}_Code"
-            name_col = f"Fund{i}_Name"
-            amount_col = f"Fund{i}_Amount"
+for i in range(1, max_funds + 1):
+    code_col = f"Project{i}Code"
+    name_col = f"Project{i}Name"
+    amount_col = f"Project{i}Amount"
 
-            output[f"Project{i}Code"] = schedule[code_col] if code_col in schedule else ""
-            output[f"Project{i}Name"] = schedule[name_col] if name_col in schedule else ""
-            output[f"Project{i}Amount"] = schedule[amount_col] if amount_col in schedule else ""
+    output[f"Project{i}Code"] = (schedule[code_col] if code_col in schedule else "").astype(object)
+    output[f"Project{i}Name"] = (schedule[name_col] if name_col in schedule else "").astype(object)
+    output[f"Project{i}Amount"] = (schedule[amount_col] if amount_col in schedule else pd.Series(dtype=object)).astype(object)
 
         # -----------------------------
         # Remove CREDITCARDCOSTS and adjust Amount
@@ -357,6 +357,7 @@ if token_file and schedule_file and mapping_file:
         # Identify mismatched splits
         # -----------------------------
         output["AmountMismatch"] = pd.to_numeric(output["Amount"], errors="coerce") != output["ProjectTotal"]
+    output["Amount"] = output["Amount"].astype(object)
 
     # -----------------------------
     # Migration Summary Dashboard
