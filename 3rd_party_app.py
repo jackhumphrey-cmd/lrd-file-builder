@@ -233,15 +233,19 @@ Return this exact structure:
   ]
 }}"""
 
-    response = requests.post(
-        ANTHROPIC_API_URL,
-        headers={"Content-Type": "application/json"},
-        json={
-            "model": "claude-sonnet-4-20250514",
-            "max_tokens": 1000,
-            "messages": [{"role": "user", "content": prompt}]
-        }
-    )
+response = requests.post(
+    ANTHROPIC_API_URL,
+    headers={
+        "Content-Type": "application/json",
+        "x-api-key": st.secrets["ANTHROPIC_API_KEY"],
+        "anthropic-version": "2023-06-01"
+    },
+    json={
+        "model": "claude-sonnet-4-20250514",
+        "max_tokens": 1000,
+        "messages": [{"role": "user", "content": prompt}]
+    }
+)
 
     raw = response.json()["content"][0]["text"].strip()
     raw = re.sub(r"^```json|^```|```$", "", raw, flags=re.MULTILINE).strip()
