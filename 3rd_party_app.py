@@ -179,8 +179,6 @@ DESTINATION_FIELDS = [
     "DonorPaidCosts",
 ]
 
-FUND_FIELD_GROUPS = ["Code", "Name", "Amount"]
-
 ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
 
 # -----------------------------
@@ -233,19 +231,19 @@ Return this exact structure:
   ]
 }}"""
 
-response = requests.post(
-    ANTHROPIC_API_URL,
-    headers={
-        "Content-Type": "application/json",
-        "x-api-key": st.secrets["ANTHROPIC_API_KEY"],
-        "anthropic-version": "2023-06-01"
-    },
-    json={
-        "model": "claude-sonnet-4-20250514",
-        "max_tokens": 1000,
-        "messages": [{"role": "user", "content": prompt}]
-    }
-)
+    response = requests.post(
+        ANTHROPIC_API_URL,
+        headers={
+            "Content-Type": "application/json",
+            "x-api-key": st.secrets["ANTHROPIC_API_KEY"],
+            "anthropic-version": "2023-06-01"
+        },
+        json={
+            "model": "claude-sonnet-4-20250514",
+            "max_tokens": 1000,
+            "messages": [{"role": "user", "content": prompt}]
+        }
+    )
 
     raw = response.json()["content"][0]["text"].strip()
     raw = re.sub(r"^```json|^```|```$", "", raw, flags=re.MULTILINE).strip()
@@ -297,9 +295,9 @@ if "ai_mapping" not in st.session_state:
             st.error(f"AI mapping failed: {e}")
             st.stop()
 
-ai_result     = st.session_state.ai_mapping
-ai_mappings   = ai_result.get("mappings", {})
-ai_fund_maps  = ai_result.get("fund_mappings", [])
+ai_result    = st.session_state.ai_mapping
+ai_mappings  = ai_result.get("mappings", {})
+ai_fund_maps = ai_result.get("fund_mappings", [])
 
 # -----------------------------
 # Step 3 — Review & Edit Mapping
@@ -307,12 +305,12 @@ ai_fund_maps  = ai_result.get("fund_mappings", [])
 st.subheader("Column Mapping")
 st.info("Review the AI-suggested mappings below. Adjust any dropdowns before generating the output.")
 
-blank_option     = "— please select —"
-column_options   = [blank_option] + source_columns
+blank_option      = "— please select —"
+column_options    = [blank_option] + source_columns
 confirmed_mapping = {}
 
 CONFIDENCE_LABELS = {
-    "High":   ("✅ High",   "confidence-high"),
+    "High":   ("✅ High",    "confidence-high"),
     "Medium": ("⚠️ Medium", "confidence-medium"),
     "Low":    ("🔴 Low",    "confidence-low"),
     None:     ("— Unmapped", "unmapped-warning"),
@@ -320,8 +318,8 @@ CONFIDENCE_LABELS = {
 
 # Core fields
 st.markdown("#### Core Fields")
-cols_per_row = 3
-field_chunks = [DESTINATION_FIELDS[i:i+cols_per_row] for i in range(0, len(DESTINATION_FIELDS), cols_per_row)]
+cols_per_row  = 3
+field_chunks  = [DESTINATION_FIELDS[i:i+cols_per_row] for i in range(0, len(DESTINATION_FIELDS), cols_per_row)]
 
 for chunk in field_chunks:
     row_cols = st.columns(cols_per_row)
@@ -366,7 +364,7 @@ for i in range(1, num_funds + 1):
     fund_entry = {}
     for col_ui, sub_field, ai_key in zip(f_cols, ["Code", "Name", "Amount"], ["code", "name", "amount"]):
         with col_ui:
-            suggested  = ai_fund.get(ai_key)
+            suggested   = ai_fund.get(ai_key)
             default_idx = (
                 column_options.index(suggested)
                 if suggested and suggested in column_options
@@ -397,15 +395,15 @@ if st.button("Generate Migration File"):
     with st.spinner("Building output..."):
 
         # Merge token data
+        payment_id_col = confirmed_mapping.get("PaymentMethodId")
         merged = schedule.merge(
             tokens[["source_old_id", "created_customer", "source_new_id"]],
-            left_on=confirmed_mapping.get("PaymentMethodId"),
+            left_on=payment_id_col,
             right_on="source_old_id",
             how="left"
         ).drop(columns=["source_old_id"], errors="ignore")
 
         # Remove cancelled schedules
-        freq_col = confirmed_mapping.get("Frequency")
         status_candidates = [c for c in merged.columns if "status" in c.lower()]
         if status_candidates:
             status_col = status_candidates[0]
@@ -450,7 +448,7 @@ if st.button("Generate Migration File"):
             output[f"Project{i}Name"]   = merged[name_src]   if name_src   and name_src   in merged.columns else ""
             output[f"Project{i}Amount"] = merged[amount_src] if amount_src and amount_src in merged.columns else ""
 
-        # Remove CREDITCARDCOSTS rows and adjust Amount
+        # Remove CREDITCARDCOSTS and adjust Amount
         project_amount_cols = [c for c in output.columns if re.match(r"Project\d+Amount", c)]
         for i in range(1, len(confirmed_fund_mappings) + 1):
             code_col   = f"Project{i}Code"
@@ -467,8 +465,8 @@ if st.button("Generate Migration File"):
 
         # Split mismatch detection
         if project_amount_cols:
-            output["ProjectTotal"]    = output[project_amount_cols].apply(pd.to_numeric, errors="coerce").sum(axis=1)
-            output["AmountMismatch"]  = pd.to_numeric(output["Amount"], errors="coerce") != output["ProjectTotal"]
+            output["ProjectTotal"]   = output[project_amount_cols].apply(pd.to_numeric, errors="coerce").sum(axis=1)
+            output["AmountMismatch"] = pd.to_numeric(output["Amount"], errors="coerce") != output["ProjectTotal"]
         else:
             output["ProjectTotal"]   = 0
             output["AmountMismatch"] = False
